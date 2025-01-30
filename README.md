@@ -2,11 +2,11 @@
   <img src="assets/diagram.png" 
 </p>
   
-## ☁️ MultiCloud, DevOps & AI Challenge — Day 3 — Building a CI/CD Pipeline to Test, Stage and Deploy our E-Commerce Application. ☁️
+## ☁️ MultiCloud, DevOps & AI Challenge — Day 3 — Building and Automating CI/CD Pipeline to Test, Stage and Deploy our E-Commerce Application. ☁️
 
 This is part of the third project of the Multicloud, Devops and AI Challenge!
 
-In this project we will be build our E-commerce application 
+In this project we will be build and automating our E-commerce application testings and deployments for production using AWS CodePipeline so that every time we push changes to our application they are built and deployed automatically. 
 
 
 <h2>Environments and Technologies Used</h2>
@@ -14,6 +14,7 @@ In this project we will be build our E-commerce application
   - Amazon Web Services
   - Github Codespaces
   - AWS CodePipeline
+  - AWS CodeBuild
   - Docker
   - Amazon Elastic Container Registry
   
@@ -229,18 +230,51 @@ artifacts:
     - cloudmart-frontend.yaml
 ```
 
+Then we will specify the deployment, with the following `buildspec.yml`:
+
+```
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 20
+    commands:
+      - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/kubectl
+      - chmod +x ./kubectl
+      - mv ./kubectl /usr/local/bin
+      - kubectl version --short --client
+  post_build:
+    commands:
+      - aws eks update-kubeconfig --region us-east-1 --name cloudmart
+      - kubectl get nodes
+      - ls
+      - IMAGE_URI=$(jq -r '.[0].imageUri' imagedefinitions.json)
+      - echo $IMAGE_URI
+      - sed -i "s|CONTAINER_IMAGE|$IMAGE_URI|g" cloudmart-frontend.yaml
+      - kubectl apply -f cloudmart-frontend.yaml
+```
 
 
 
-***3. Docker Test and Debugging***
+***3. Testing the CI/CD Pipeline***
 
-
-
-
-***Cleanup***
-
-When you're done, you can clean up the Docker resources with these commands:
-
+1. **Make a Change on GitHub:**
+    - Update the application code in the **`cloudmart-application`** repository.
+    - File `src/components/MainPage/index.jsx` line 93
+    - Commit and push the changes.
+    
+    ```bash
+    git add -A
+    git commit -m "changed to Featured Products on CloudMart"
+    git push
+    ```
+    
+2. **Observe the Pipeline Execution:**
+    - Watch how CodePipeline automatically triggers the build.
+    - After the build, the deployment phase should begin.
+3. **Verify the Deployment:**
+    - Check Kubernetes using **`kubectl`** commands to confirm the application update.
 
 
 <h2>Conclusion</h2>
