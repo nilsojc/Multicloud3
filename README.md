@@ -68,96 +68,14 @@ In this step, we will clone the frontend of our CloudMart e-commerce application
 gh repo clone nilsojc/multicloud2
 ```
 
+By going to settings, developer settings and classic tokens in GitHub, we will generate our api key to be used to AWS codepipeline so that our cloud CI/CD deployment access our repo.
+
 Then, we wil create a new pipeline with AWS CodePipeline:
 
 ```
-aws codepipeline create-pipeline \
-    --pipeline-name cloudmart-cicd-pipeline \
-    --role-arn arn:aws:iam::your-account-id:role/your-codepipeline-role \
-    --pipeline-structure '{
-        "stages": [
-            {
-                "name": "Source",
-                "actions": [
-                    {
-                        "name": "SourceAction",
-                        "actionTypeId": {
-                            "category": "Source",
-                            "owner": "ThirdParty",
-                            "provider": "GitHub",
-                            "version": "1"
-                        },
-                        "configuration": {
-                            "Owner": "nilsojc",
-                            "Repo": "multicloud3",
-                            "Branch": "main",
-                            "OAuthToken": "your-github-oauth-token"
-                        },
-                        "outputArtifacts": [
-                            {
-                                "name": "SourceOutput"
-                            }
-                        ],
-                        "runOrder": 1
-                    }
-                ]
-            },
-            {
-                "name": "Build",
-                "actions": [
-                    {
-                        "name": "BuildAction",
-                        "actionTypeId": {
-                            "category": "Build",
-                            "owner": "AWS",
-                            "provider": "CodeBuild",
-                            "version": "1"
-                        },
-                        "configuration": {
-                            "ProjectName": "cloudmartBuild"
-                        },
-                        "inputArtifacts": [
-                            {
-                                "name": "SourceOutput"
-                            }
-                        ],
-                        "outputArtifacts": [
-                            {
-                                "name": "BuildOutput"
-                            }
-                        ],
-                        "runOrder": 1
-                    }
-                ]
-            },
-            {
-                "name": "Deploy",
-                "actions": [
-                    {
-                        "name": "DeployAction",
-                        "actionTypeId": {
-                            "category": "Deploy",
-                            "owner": "AWS",
-                            "provider": "CodeDeploy",
-                            "version": "1"
-                        },
-                        "configuration": {
-                            "ApplicationName": "cloudmartDeploy",
-                            "DeploymentGroupName": "cloudmartDeployGroup"
-                        },
-                        "inputArtifacts": [
-                            {
-                                "name": "BuildOutput"
-                            }
-                        ],
-                        "runOrder": 1
-                    }
-                ]
-            }
-        ]
-    }' \
-    --region us-east-1
+aws codepipeline create-pipeline --region us-east-1 --cli-input-json file://pipeline.json
 ```
+NOTE: Replace your api's and resources on the pipeline JSON file.
 
 Next up, we will be configuring AWS CodeBuild to Build the Docker Image:
 
@@ -166,7 +84,7 @@ aws codebuild create-project \
     --name cloudmartBuild \
     --source '{
         "type": "GITHUB",
-        "location": "https://github.com/yourusername/multicloud3.git",
+        "location": "https://github.com/nilsojc/Multicloud3.git",
         "gitCloneDepth": 1,
         "buildspec": "buildspec.yml"
     }' \
@@ -230,7 +148,52 @@ artifacts:
     - cloudmart-frontend.yaml
 ```
 
-Then we will specify the deployment, with the following `buildspec.yml`:
+Then we will now build the AWS CodeBuild for the Application deployment. Remember to configure the variables for the AWS keys so that we can communicate with the Kubernetes Cluster.
+
+
+```
+aws codebuild create-project \
+    --name cloudmartDeployToProduction \
+    --source '{
+        "type": "GITHUB",
+        "location": "yourgithublocation",
+        "gitCloneDepth": 1,
+        "buildspec": "buildspec-deploy.yml"
+    }' \
+    --artifacts '{
+        "type": "NO_ARTIFACTS"
+    }' \
+    --environment '{
+        "type": "LINUX_CONTAINER",
+        "image": "aws/codebuild/amazonlinux2-x86_64-standard:4.0",
+        "computeType": "BUILD_GENERAL1_SMALL",
+        "privilegedMode": true,
+        "environmentVariables": [
+            {
+                "name": "ECR_REPO",
+                "value": "your ecr repo id"
+            },
+            {
+                "name": "AWS_ACCESS_KEY_ID",
+                "value": "<your-eks-user-access-key>",
+                "type": "PLAINTEXT"
+            },
+            {
+                "name": "AWS_SECRET_ACCESS_KEY",
+                "value": "<your-eks-user-secret-key>",
+                "type": "PLAINTEXT"
+            }
+        ]
+    }' \
+    --service-role Cloudmartrole \
+    --region us-east-1
+```
+
+PSA: in a real-world production environment, it is recommended to use an IAM role for this purpose. In this practical exercise, we are directly using the credentials of the eks-user to facilitate the process, since our focus is on CI/CD and not on user authentication at this moment. The configuration of this process in EKS is more extensive. Refer to the Reference section and check "Enabling IAM principal access to your cluster"
+
+
+
+Then we will specify the deployment, with the following `buildspec-deploy.yml`:
 
 ```
 version: 0.2
@@ -240,7 +203,7 @@ phases:
     runtime-versions:
       docker: 20
     commands:
-      - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/kubectl
+      - curl -o kubectl https://amazon-eks.s3.us-east-1.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/kubectl
       - chmod +x ./kubectl
       - mv ./kubectl /usr/local/bin
       - kubectl version --short --client

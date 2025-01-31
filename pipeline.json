@@ -1,0 +1,90 @@
+{
+    "pipeline": {
+        "name": "cloudmart-cicd-pipeline",
+        "roleArn": "yourpipelinerole",
+        "artifactStore": {
+            "type": "S3",
+            "location": "yourbucketname"
+        },
+        "stages": [
+            {
+                "name": "Source",
+                "actions": [
+                    {
+                        "name": "SourceAction",
+                        "actionTypeId": {
+                            "category": "Source",
+                            "owner": "ThirdParty",
+                            "provider": "GitHub",
+                            "version": "1"
+                        },
+                        "configuration": {
+                            "Owner": "yourgithubusername",
+                            "Repo": "yourrepo",
+                            "Branch": "main",
+                            "OAuthToken": "youroathkey"
+                        },
+                        "outputArtifacts": [
+                            {
+                                "name": "SourceOutput"
+                            }
+                        ],
+                        "runOrder": 1
+                    }
+                ]
+            },
+            {
+                "name": "Build",
+                "actions": [
+                    {
+                        "name": "BuildAction",
+                        "actionTypeId": {
+                            "category": "Build",
+                            "owner": "AWS",
+                            "provider": "CodeBuild",
+                            "version": "1"
+                        },
+                        "configuration": {
+                            "ProjectName": "cloudmartBuild"
+                        },
+                        "inputArtifacts": [
+                            {
+                                "name": "SourceOutput"
+                            }
+                        ],
+                        "outputArtifacts": [
+                            {
+                                "name": "BuildOutput"
+                            }
+                        ],
+                        "runOrder": 1
+                    }
+                ]
+            },
+            {
+                "name": "Deploy",
+                "actions": [
+                    {
+                        "name": "DeployAction",
+                        "actionTypeId": {
+                            "category": "Deploy",
+                            "owner": "AWS",
+                            "provider": "CodeDeploy",
+                            "version": "1"
+                        },
+                        "configuration": {
+                            "ApplicationName": "cloudmartDeploy",
+                            "DeploymentGroupName": "cloudmartDeployGroup"
+                        },
+                        "inputArtifacts": [
+                            {
+                                "name": "BuildOutput"
+                            }
+                        ],
+                        "runOrder": 1
+                    }
+                ]
+            }
+        ]
+    }
+}
