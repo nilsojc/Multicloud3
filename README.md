@@ -40,7 +40,6 @@ In this project we will be build and automating our E-commerce application testi
 - Configured build specifications (buildspec.yml) to define build steps, such as installing dependencies, running tests, and packaging the application.
 
 
-
 <h2>Step by Step Instructions</h2>
 
 ***1. Repo configuration***
