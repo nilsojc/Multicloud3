@@ -21,9 +21,24 @@ In this project we will be build and automating our E-commerce application testi
   
 <h2>Key Features</h2>  
 
-✅
-✅
-✅
+✅Automated CI/CD Pipeline:
+
+- Built a fully automated CI/CD pipeline using AWS CodePipeline to streamline the testing and deployment process for an E-commerce application.
+
+- Every push to the GitHub repository triggers the pipeline, ensuring seamless and continuous delivery.
+
+✅Integration with GitHub:
+
+- Connected the pipeline to a GitHub repository to monitor changes in the main branch.
+
+- Used GitHub OAuth tokens for secure integration with AWS CodePipeline.
+
+✅Automated Builds with AWS CodeBuild:
+
+- Leveraged AWS CodeBuild to automatically build the application whenever changes are pushed to the repository.
+
+- Configured build specifications (buildspec.yml) to define build steps, such as installing dependencies, running tests, and packaging the application.
+
 
 
 <h2>Step by Step Instructions</h2>
@@ -218,12 +233,13 @@ phases:
       - kubectl apply -f cloudmart-frontend.yaml
 ```
 
-Replace the image URI on line 18 of the cloudmart-frontend.yaml files with CONTAINER_IMAGE.
+Replace the image URI on line 18 of the cloudmart-frontend.yaml files with the container image URI.
 
 
 ***3. Testing the CI/CD Pipeline***
 
-1. **Make a Change on GitHub:**
+We can test if our pipeline works by making a change in Github:
+
     - Update the application code in the **`cloudmart-application`** repository.
     - File `src/components/MainPage/index.jsx` line 93
     - Commit and push the changes.
@@ -234,13 +250,15 @@ Replace the image URI on line 18 of the cloudmart-frontend.yaml files with CONTA
     git push
     ```
     
-2. **Observe the Pipeline Execution:**
+ Then, Observe the Pipeline execution:
+
     - Watch how CodePipeline automatically triggers the build.
     - After the build, the deployment phase should begin.
-3. **Verify the Deployment:**
+
+And finally, we can verify the deployment:
     - Check Kubernetes using **`kubectl`** commands to confirm the application update.
 
 
 <h2>Conclusion</h2>
 
-In this project, I learned how to 
+In this project, I learned how to Leverage AWS CodeBuild and CodePipeline to create CI/CD Pipelines on the cloud with AWS that can link up to our Github repository allowing us to make changes on the fly!
