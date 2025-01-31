@@ -218,6 +218,7 @@ phases:
       - kubectl apply -f cloudmart-frontend.yaml
 ```
 
+Replace the image URI on line 18 of the cloudmart-frontend.yaml files with CONTAINER_IMAGE.
 
 
 ***3. Testing the CI/CD Pipeline***
